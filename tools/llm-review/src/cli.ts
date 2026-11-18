@@ -6,12 +6,10 @@
 //   OLLAMA_MODEL  default qwen2.5-coder:7b
 
 import { relative, resolve } from 'node:path';
-import { OllamaClient } from './ollama.ts';
+import { createOllamaClient, ruleFilter, selectRules } from './config.ts';
 import { reviewFile } from './review.ts';
-import { loadRules } from './rules.ts';
 import type { FileReview, UsageStats } from './types.ts';
 
-const RULES_PATH = resolve(import.meta.dirname, '../../../review-rules.json');
 const USAGE = 'Usage: npm run review -- <file...> [--rule=R1,R3] [--all-in-one]';
 
 interface CliArgs {
@@ -21,10 +19,9 @@ interface CliArgs {
 }
 
 function parseArgs(argv: readonly string[]): CliArgs {
-  const ruleArg = argv.find((a) => a.startsWith('--rule='));
   return {
     files: argv.filter((a) => !a.startsWith('--')),
-    onlyRules: ruleArg ? ruleArg.slice('--rule='.length).split(',') : null,
+    onlyRules: ruleFilter(argv),
     allInOne: argv.includes('--all-in-one'),
   };
 }
@@ -59,19 +56,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  const rules = loadRules(RULES_PATH).filter((r) => !args.onlyRules || args.onlyRules.includes(r.id));
-  if (rules.length === 0) {
-    console.error(`No rules selected. Check --rule and ${relative(process.cwd(), RULES_PATH)}.`);
-    process.exitCode = 1;
-    return;
-  }
-
-  const client = new OllamaClient({
-    url: process.env['OLLAMA_URL'] ?? 'http://localhost:11434',
-    model: process.env['OLLAMA_MODEL'] ?? 'qwen2.5-coder:7b',
-    timeoutMs: 5 * 60 * 1000,
-    contextTokens: 8192,
-  });
+  const rules = selectRules(args.onlyRules);
+  const client = createOllamaClient();
   const stats: UsageStats = { tokensIn: 0, tokensOut: 0 };
   const started = Date.now();
   let found = 0;

@@ -5,7 +5,7 @@ A demo bench for automated code review, built step by step:
 1. ✅ **Team rules** — [`review-rules.json`](review-rules.json).
 2. ✅ **LLM reviewer on a local Ollama model** — [`tools/llm-review/src`](tools/llm-review/src).
 3. ✅ **SonarQube Cloud** — static analysis on every push to `main` and every pull request ([`.github/workflows/sonar.yml`](.github/workflows/sonar.yml)).
-4. ⏳ Review comments on pull requests.
+4. ✅ **Review comments on pull requests** from the local model (`npm run review:prs`).
 
 ## Rules
 
@@ -50,6 +50,26 @@ npm run review -- path/to/file.ts --all-in-one   # all rules in one request: fas
 
 Environment variables: `OLLAMA_URL` (default `http://localhost:11434`) and `OLLAMA_MODEL` (default `qwen2.5-coder:7b`).
 
+## Reviewing pull requests with the local model
+
+GitHub cannot reach a model on your machine, so your machine asks GitHub instead:
+
+```bash
+npm run review:prs -- --dry-run   # review all open PRs, print the comment, post nothing
+npm run review:prs                # review and post one comment per PR
+npm run review:prs -- --pr=1      # only PR #1
+npm run review:prs -- --force     # review again even if the latest commit was already reviewed
+```
+
+How it works:
+
+1. `gh` lists open pull requests and downloads each diff.
+2. Every changed JS/TS file is fetched at the pull request's commit **as text**. Nothing from the pull request is executed, so this is safe for a public repository.
+3. The file is reviewed like a local file; only findings on lines the pull request added are reported.
+4. One comment per pull request, marked with `<!-- llm-review -->`, is created or updated in place. The reviewed commit is stored in the comment, so an unchanged pull request is skipped.
+
+Requires the GitHub CLI logged in to an account that can comment on the repository (`gh auth status`).
+
 ## How the reviewer guards against hallucinations
 
 - By default each rule is checked in a **separate request**. A small model is more careful when it has one question to answer.
@@ -73,4 +93,9 @@ TypeScript, run directly by Node (type stripping), so there is no build step. `n
 | [`ollama.ts`](tools/llm-review/src/ollama.ts) | Ollama `/api/chat` client, fallback for runners without structured output |
 | [`review.ts`](tools/llm-review/src/review.ts) | Reviews one file: batches of rules, retry on invalid JSON, parses the answer |
 | [`evidence.ts`](tools/llm-review/src/evidence.ts) | Rejects findings whose quoted code is not in the file or does not match the rule's anchor |
-| [`cli.ts`](tools/llm-review/src/cli.ts) | Command line arguments and terminal output |
+| [`cli.ts`](tools/llm-review/src/cli.ts) | `npm run review`: reviews local files, prints to the terminal |
+| [`pr-cli.ts`](tools/llm-review/src/pr-cli.ts) | `npm run review:prs`: reviews open pull requests, posts a comment |
+| [`github.ts`](tools/llm-review/src/github.ts) | GitHub access through the `gh` CLI |
+| [`diff.ts`](tools/llm-review/src/diff.ts) | Finds the lines a pull request added |
+| [`report.ts`](tools/llm-review/src/report.ts) | Builds the pull request comment, sanitises model output |
+| [`config.ts`](tools/llm-review/src/config.ts) | Shared settings: Ollama client, rules file |

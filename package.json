@@ -9,6 +9,7 @@
   },
   "scripts": {
     "review": "node tools/llm-review/src/cli.ts",
+    "review:prs": "node tools/llm-review/src/pr-cli.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {

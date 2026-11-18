@@ -20,7 +20,19 @@ export async function reviewFile(
   options: ReviewOptions,
   stats: UsageStats,
 ): Promise<FileReview> {
-  const sourceLines = readFileSync(path, 'utf8').split('\n');
+  return reviewSource(readFileSync(path, 'utf8'), label, rules, client, options, stats);
+}
+
+/** Reviews source text that did not come from the local disk, e.g. a file from a pull request. */
+export async function reviewSource(
+  source: string,
+  label: string,
+  rules: readonly Rule[],
+  client: OllamaClient,
+  options: ReviewOptions,
+  stats: UsageStats,
+): Promise<FileReview> {
+  const sourceLines = source.split('\n');
   const batches = options.allInOne ? [rules] : rules.map((rule) => [rule]);
   const warnings: string[] = [];
   const issues: Issue[] = [];
