@@ -3,7 +3,7 @@
 A demo bench for automated code review, built step by step:
 
 1. ✅ **Team rules** — [`review-rules.json`](review-rules.json).
-2. ✅ **LLM reviewer on a local Ollama model** — [`tools/llm-review/review.mjs`](tools/llm-review/review.mjs).
+2. ✅ **LLM reviewer on a local Ollama model** — [`tools/llm-review/src`](tools/llm-review/src).
 3. ✅ **SonarQube Cloud** — static analysis on every push to `main` and every pull request ([`.github/workflows/sonar.yml`](.github/workflows/sonar.yml)).
 4. ⏳ Review comments on pull requests.
 
@@ -32,7 +32,7 @@ Write rules in English: local models follow it more reliably. In `anchor`, backs
 
 ## Running the review locally
 
-Requires Node.js 22+ and [Ollama](https://ollama.com):
+Requires Node.js 22.18+ (runs TypeScript directly, no build step) and [Ollama](https://ollama.com):
 
 ```bash
 brew install ollama
@@ -61,3 +61,16 @@ Environment variables: `OLLAMA_URL` (default `http://localhost:11434`) and `OLLA
 Analysis runs in GitHub Actions on every push to `main` and on every pull request.
 Settings live in [`sonar-project.properties`](sonar-project.properties); the workflow needs one repository secret, `SONAR_TOKEN`.
 Automatic Analysis must be **off** in the SonarQube Cloud project, because the analysis runs in CI.
+
+## Reviewer code
+
+TypeScript, run directly by Node (type stripping), so there is no build step. `npm run typecheck` checks types.
+
+| File | Responsibility |
+| --- | --- |
+| [`prompts.ts`](tools/llm-review/src/prompts.ts) | **Everything the model reads:** rule descriptions, system prompt, answer format, how code is presented |
+| [`rules.ts`](tools/llm-review/src/rules.ts) | Loads and validates `review-rules.json` |
+| [`ollama.ts`](tools/llm-review/src/ollama.ts) | Ollama `/api/chat` client, fallback for runners without structured output |
+| [`review.ts`](tools/llm-review/src/review.ts) | Reviews one file: batches of rules, retry on invalid JSON, parses the answer |
+| [`evidence.ts`](tools/llm-review/src/evidence.ts) | Rejects findings whose quoted code is not in the file or does not match the rule's anchor |
+| [`cli.ts`](tools/llm-review/src/cli.ts) | Command line arguments and terminal output |
