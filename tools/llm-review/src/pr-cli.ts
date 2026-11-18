@@ -28,7 +28,7 @@ import { buildComment, COMMENT_MARKER, reviewedSha } from './report.ts';
 import { reviewSource } from './review.ts';
 import type { Rule, UsageStats } from './types.ts';
 
-const REVIEWED_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const REVIEWED_EXTENSIONS = /\.(ts|tsx|js|jsx|mjs|cjs|html)$/;
 
 interface Options {
   repo: string;
@@ -58,10 +58,23 @@ async function reviewPullRequest(pr: PullRequest, options: Options): Promise<voi
   const started = Date.now();
   const files: PullRequestFileReview[] = [];
 
+  // Reference files are read at the pull request's commit, so a PR that changes them is reviewed consistently.
+  const contextCache = new Map<string, Promise<string>>();
+  const loadContext = (path: string): Promise<string> => {
+    if (!contextCache.has(path)) {
+      contextCache.set(path, getFileAtCommit(repo, path, pr.headRefOid));
+    }
+    return contextCache.get(path)!;
+  };
+
   for (const changed of changedFiles) {
     console.log(`  reviewing ${changed.path} (${changed.addedLines.size} changed line(s))`);
     const source = await getFileAtCommit(repo, changed.path, pr.headRefOid);
-    const review = await reviewSource(source, changed.path, rules, client, { allInOne: options.allInOne }, stats);
+    const review = await reviewSource(source, changed.path, rules, client, { allInOne: options.allInOne, loadContext }, stats);
+    if (review.rulesApplied.length === 0) {
+      console.log('    no rules apply, skipped');
+      continue;
+    }
     const inDiff = review.accepted.filter((issue) => changed.addedLines.has(issue.line));
     files.push({
       path: changed.path,

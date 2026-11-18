@@ -2,16 +2,25 @@ import { readFileSync } from 'node:fs';
 import { verifyIssues } from './evidence.ts';
 import type { OllamaClient } from './ollama.ts';
 import { buildMessages } from './prompts.ts';
-import type { FileReview, Issue, Rule, Severity, UsageStats } from './types.ts';
+import { appliesTo } from './rules.ts';
+import type { ContextFile, FileReview, Issue, Rule, Severity, UsageStats } from './types.ts';
 import { SEVERITIES } from './types.ts';
+
+/** Loads a reference file by its path relative to the repository root. */
+export type ContextLoader = (path: string) => Promise<string>;
 
 export interface ReviewOptions {
   /** true: all rules in one request (fast); false: one request per rule (more accurate). */
   allInOne: boolean;
+  loadContext: ContextLoader;
 }
 
 const MAX_ATTEMPTS = 2;
 
+/**
+ * Reviews a file from disk. `label` is the path relative to the repository root:
+ * rule scopes (files / exclude) are matched against it.
+ */
 export async function reviewFile(
   path: string,
   label: string,
@@ -32,19 +41,49 @@ export async function reviewSource(
   options: ReviewOptions,
   stats: UsageStats,
 ): Promise<FileReview> {
+  const applicable = rules.filter((rule) => appliesTo(rule, label));
+  if (applicable.length === 0) {
+    return { file: label, accepted: [], rejected: [], warnings: [], rulesApplied: [] };
+  }
+
   const sourceLines = source.split('\n');
-  const batches = options.allInOne ? [rules] : rules.map((rule) => [rule]);
+  const batches = options.allInOne ? [applicable] : applicable.map((rule) => [rule]);
   const warnings: string[] = [];
   const issues: Issue[] = [];
 
   for (const batch of batches) {
-    const result = await askModel(client, batch, label, sourceLines, stats);
+    const context = await loadContextFiles(batch, label, options.loadContext, warnings);
+    const result = await askModel(client, batch, label, sourceLines, context, stats);
     issues.push(...result.issues);
     warnings.push(...result.warnings);
   }
 
   issues.sort((a, b) => a.line - b.line);
-  return { file: label, ...verifyIssues(issues, sourceLines, rules), warnings };
+  return {
+    file: label,
+    ...verifyIssues(issues, sourceLines, applicable),
+    warnings,
+    rulesApplied: applicable.map((r) => r.id),
+  };
+}
+
+/** Reference files of the rules in a batch; the file under review itself is never added. */
+async function loadContextFiles(
+  batch: readonly Rule[],
+  label: string,
+  loadContext: ContextLoader,
+  warnings: string[],
+): Promise<ContextFile[]> {
+  const paths = [...new Set(batch.flatMap((rule) => rule.context))].filter((path) => path !== label);
+  const files: ContextFile[] = [];
+  for (const path of paths) {
+    try {
+      files.push({ path, content: await loadContext(path) });
+    } catch (error) {
+      warnings.push(`context file ${path} could not be loaded: ${errorMessage(error)}`);
+    }
+  }
+  return files;
 }
 
 /** One batch of rules; retries once on an unparsable answer, then gives up with a warning. */
@@ -53,9 +92,10 @@ async function askModel(
   batch: readonly Rule[],
   label: string,
   sourceLines: readonly string[],
+  context: readonly ContextFile[],
   stats: UsageStats,
 ): Promise<{ issues: Issue[]; warnings: string[] }> {
-  const messages = buildMessages(batch, label, sourceLines);
+  const messages = buildMessages(batch, label, sourceLines, context);
   const ids = batch.map((r) => r.id).join(',');
   const warnings: string[] = [];
 

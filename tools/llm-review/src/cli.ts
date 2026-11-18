@@ -6,7 +6,7 @@
 //   OLLAMA_MODEL  default qwen2.5-coder:7b
 
 import { relative, resolve } from 'node:path';
-import { createOllamaClient, ruleFilter, selectRules } from './config.ts';
+import { createOllamaClient, loadLocalContext, REPO_ROOT, ruleFilter, selectRules } from './config.ts';
 import { reviewFile } from './review.ts';
 import type { FileReview, UsageStats } from './types.ts';
 
@@ -28,6 +28,11 @@ function parseArgs(argv: readonly string[]): CliArgs {
 
 function printFileReview(review: FileReview): void {
   console.log(`── ${review.file}`);
+  if (review.rulesApplied.length === 0) {
+    console.log('  – no rules apply to this file\n');
+    return;
+  }
+  console.log(`  rules: ${review.rulesApplied.join(', ')}`);
   for (const warning of review.warnings) {
     console.log(`  ⚠ ${warning}`);
   }
@@ -67,8 +72,9 @@ async function main(): Promise<void> {
   );
 
   for (const file of args.files) {
-    const label = relative(process.cwd(), resolve(file));
-    const review = await reviewFile(file, label, rules, client, { allInOne: args.allInOne }, stats);
+    // Rule scopes are written relative to the repository root.
+    const label = relative(REPO_ROOT, resolve(file));
+    const review = await reviewFile(file, label, rules, client, { allInOne: args.allInOne, loadContext: loadLocalContext }, stats);
     printFileReview(review);
     found += review.accepted.length;
   }

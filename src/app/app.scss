@@ -1,0 +1,15 @@
+.page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+.customer-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.error {
+  color: #c93a3a;
+}

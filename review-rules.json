@@ -5,28 +5,73 @@
       "title": "Do not use `any`",
       "description": "Do not write the TypeScript `any` type in the code: `: any`, `as any`, `any[]`, `Array<any>`, `<any>`. Only report places where the keyword `any` is written, and quote that code including the word `any`. Use a concrete type, a generic, or `unknown` instead.",
       "notAViolation": "Code that only returns or passes along an implicit `any`, e.g. `JSON.parse(raw)` or `as User[]`. The word \"any\" inside a string or a comment, or as part of a name such as `anyValue` or `company`.",
-      "anchor": "\\bany\\b"
+      "anchor": "\\bany\\b",
+      "exclude": [
+        "tools/**"
+      ]
     },
     {
       "id": "R2",
       "title": "No `console.log`",
       "description": "Do not leave `console.log(...)` calls in committed code.",
       "notAViolation": "`console.error` or `console.warn`.",
-      "anchor": "console\\.log"
+      "anchor": "console\\.log",
+      "exclude": [
+        "tools/**"
+      ]
     },
     {
       "id": "R3",
       "title": "Use `===` and `!==`",
       "description": "Compare values with strict equality `===` and `!==`. Every loose comparison `==` or `!=` is a violation.",
       "notAViolation": "`===`, `!==`, or assignments such as `=`, `+=`, `=>`.",
-      "anchor": "[^=!<>]==[^=]|!=[^=]"
+      "anchor": "[^=!<>]==[^=]|!=[^=]",
+      "exclude": [
+        "tools/**"
+      ]
     },
     {
       "id": "R4",
       "title": "No empty `catch`",
       "description": "A `catch` block must handle the error: log it, show it to the user, or rethrow it. A violation is a `catch` block that is empty or contains only comments, e.g. `catch {}` or `catch (e) { }`.",
       "notAViolation": "A `catch` block with any statement inside.",
-      "anchor": "catch"
+      "anchor": "catch",
+      "exclude": [
+        "tools/**"
+      ]
+    },
+    {
+      "id": "R5",
+      "title": "Use the internal <app-input> for text inputs",
+      "description": "In UI code (Angular templates in .html files and inline `template:` strings in components), every text input must be the team's internal component `<app-input>` from src/app/shared/ui/input. A violation is: a native `<input>` or `<textarea>` element; an input from a third-party library such as Angular Material (`matInput`, `<mat-form-field>`), PrimeNG (`pInputText`), NG-ZORRO (`nz-input`) or Ionic (`<ion-input>`); or a new self-written input component that renders its own native `<input>`.",
+      "notAViolation": "`<app-input ...>` with any attributes or bindings; buttons, `<select>`, checkboxes and radio buttons (`<input type=\"checkbox\">`, `<input type=\"radio\">`).",
+      "files": [
+        "src/**/*.html",
+        "src/**/*.ts"
+      ],
+      "exclude": [
+        "src/app/shared/ui/input/**",
+        "src/**/*.spec.ts"
+      ],
+      "anchor": "<input\\b(?![^>]*type=[\"'](?:checkbox|radio)[\"'])|<textarea\\b|matInput|mat-form-field|pInputText|nz-input|ion-input"
+    },
+    {
+      "id": "R6",
+      "title": "Keep customer and employee logic in their domain services",
+      "description": "Customer logic belongs only to CustomerService (src/app/domain/customer/customer.service.ts): customer profiles, orders, loyalty points and invoices. Employee logic belongs only to EmployeeService (src/app/domain/employee/employee.service.ts): hiring, salaries, vacations, roles and permissions. Any other service, component or function must not re-implement that logic, for example by calculating loyalty points, order totals, invoices, monthly salaries, remaining vacation days or role permissions, or by keeping its own list of customers or employees. It must inject CustomerService or EmployeeService and call their methods instead. Report the code that re-implements domain logic and name the existing method that should be used.",
+      "notAViolation": "Calling methods of CustomerService or EmployeeService; code that only displays data they return; logic that belongs to neither domain, such as formatting, sorting for display, or UI state.",
+      "files": [
+        "src/**/*.ts"
+      ],
+      "exclude": [
+        "src/app/domain/customer/**",
+        "src/app/domain/employee/**",
+        "src/**/*.spec.ts"
+      ],
+      "context": [
+        "src/app/domain/customer/customer.service.ts",
+        "src/app/domain/employee/employee.service.ts"
+      ]
     }
   ]
 }

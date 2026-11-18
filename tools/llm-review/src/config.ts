@@ -1,18 +1,25 @@
 // Settings shared by the file and pull request entry points.
 
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { OllamaClient } from './ollama.ts';
 import { loadRules } from './rules.ts';
 import type { Rule } from './types.ts';
 
-export const RULES_PATH = resolve(import.meta.dirname, '../../../review-rules.json');
+export const REPO_ROOT = resolve(import.meta.dirname, '../../..');
+export const RULES_PATH = resolve(REPO_ROOT, 'review-rules.json');
+
+/** Reads reference files from the local checkout. */
+export function loadLocalContext(path: string): Promise<string> {
+  return readFile(resolve(REPO_ROOT, path), 'utf8');
+}
 
 export function createOllamaClient(): OllamaClient {
   return new OllamaClient({
     url: process.env['OLLAMA_URL'] ?? 'http://localhost:11434',
     model: process.env['OLLAMA_MODEL'] ?? 'qwen2.5-coder:7b',
     timeoutMs: 5 * 60 * 1000,
-    contextTokens: 8192,
+    contextTokens: 16384,
   });
 }
 

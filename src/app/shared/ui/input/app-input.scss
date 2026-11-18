@@ -1,0 +1,15 @@
+.app-input {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.app-input__label {
+  font-weight: 600;
+}
+
+.app-input__control {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #c8ccd2;
+  border-radius: 6px;
+  font: inherit;
+}

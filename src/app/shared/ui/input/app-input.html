@@ -1,0 +1,11 @@
+<label class="app-input" [for]="id">
+  <span class="app-input__label">{{ label() }}</span>
+  <input
+    class="app-input__control"
+    [id]="id"
+    [type]="type()"
+    [placeholder]="placeholder()"
+    [value]="value()"
+    (input)="onInput($event)"
+  />
+</label>

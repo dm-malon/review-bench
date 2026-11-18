@@ -1,0 +1,21 @@
+<main class="page">
+  <h1>Customers</h1>
+
+  <ul class="customer-list">
+    @for (customer of customers.all(); track customer.id) {
+      <li>
+        <strong>{{ customer.name }}</strong> · {{ customer.email }} ·
+        {{ customers.loyaltyPoints(customer.id) }} points
+      </li>
+    }
+  </ul>
+
+  <form class="customer-form" (submit)="$event.preventDefault(); addCustomer()">
+    <app-input label="Name" [(value)]="name" />
+    <app-input label="Email" type="email" placeholder="name@example.com" [(value)]="email" />
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+    <button type="submit">Add customer</button>
+  </form>
+</main>
