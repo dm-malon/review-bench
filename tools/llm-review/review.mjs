@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// LLM code reviewer: checks files against review-rules.md using a local Ollama model.
+// LLM code reviewer: checks files against review-rules.json using a local Ollama model.
 //
 // Usage:
 //   node tools/llm-review/review.mjs <file...> [--rule=R1,R3] [--all-in-one]
@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const OLLAMA_URL = process.env.OLLAMA_URL ?? 'http://localhost:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? 'qwen2.5-coder:7b';
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
-const RULES_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../../review-rules.md');
+const RULES_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../../review-rules.json');
 
 // ---------- CLI ----------
 
@@ -34,23 +34,32 @@ if (files.length === 0) {
 
 // ---------- Rules ----------
 
-/** Parses review-rules.md: "## R1 — Title", optional "anchor: `regex`", then the rule text. */
+/**
+ * Loads review-rules.json. Each rule: { id, title, description, notAViolation?, anchor? }.
+ * `anchor` is a regex the quoted evidence must match; it is compiled here so a typo fails fast.
+ */
 function loadRules(path) {
-  const markdown = readFileSync(path, 'utf8');
-  const rules = [];
-  for (const section of markdown.split(/^## /m).slice(1)) {
-    const [heading, ...body] = section.split('\n');
-    const id = heading.match(/^(R\d+)/)?.[1];
-    if (!id) continue;
-    const anchorLine = body.find((line) => /^anchor:\s*`.+`\s*$/.test(line));
-    const anchor = anchorLine ? new RegExp(anchorLine.match(/`(.+)`/)[1]) : null;
-    const text = body
-      .filter((line) => line !== anchorLine)
-      .join('\n')
-      .trim();
-    rules.push({ id, title: heading.replace(/^R\d+\s*[—-]\s*/, '').trim(), anchor, text });
-  }
-  return rules;
+  const { rules } = JSON.parse(readFileSync(path, 'utf8'));
+  if (!Array.isArray(rules)) throw new Error(`${path}: "rules" must be an array`);
+  const seen = new Set();
+  return rules.map((rule, index) => {
+    for (const field of ['id', 'title', 'description']) {
+      if (typeof rule[field] !== 'string' || rule[field].trim() === '') {
+        throw new Error(`${path}: rule #${index + 1} is missing "${field}"`);
+      }
+    }
+    if (seen.has(rule.id)) throw new Error(`${path}: duplicate rule id "${rule.id}"`);
+    seen.add(rule.id);
+    const text = rule.notAViolation
+      ? `${rule.description}\nNOT a violation: ${rule.notAViolation}`
+      : rule.description;
+    return {
+      id: rule.id,
+      title: rule.title,
+      text,
+      anchor: rule.anchor ? new RegExp(rule.anchor) : null,
+    };
+  });
 }
 
 const rules = loadRules(RULES_PATH).filter((r) => !onlyRules || onlyRules.includes(r.id));

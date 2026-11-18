@@ -2,7 +2,7 @@
 
 A demo bench for automated code review, built step by step:
 
-1. ✅ **Team rules** — [`review-rules.md`](review-rules.md).
+1. ✅ **Team rules** — [`review-rules.json`](review-rules.json).
 2. ✅ **LLM reviewer on a local Ollama model** — [`tools/llm-review/review.mjs`](tools/llm-review/review.mjs).
 3. ✅ **SonarQube Cloud** — static analysis on every push to `main` and every pull request ([`.github/workflows/sonar.yml`](.github/workflows/sonar.yml)).
 4. ⏳ Review comments on pull requests.
@@ -16,7 +16,19 @@ A demo bench for automated code review, built step by step:
 | R3  | Use `===` / `!==` instead of `==` / `!=` |
 | R4  | No empty `catch`                         |
 
-The rule format is described at the top of `review-rules.md`. To add a rule, add a new `## R5 — ...` section.
+To add a rule, append an object to `rules` in `review-rules.json`:
+
+```json
+{
+  "id": "R5",
+  "title": "Short name",
+  "description": "What is a violation. Sent to the model as is.",
+  "notAViolation": "What looks similar but is fine. Optional, but small models need it.",
+  "anchor": "regex the quoted code must match (optional)"
+}
+```
+
+Write rules in English: local models follow it more reliably. In `anchor`, backslashes are escaped as in any JSON string (`\\b` for `\b`).
 
 ## Running the review locally
 

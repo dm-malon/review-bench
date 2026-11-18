@@ -1,0 +1,32 @@
+{
+  "rules": [
+    {
+      "id": "R1",
+      "title": "Do not use `any`",
+      "description": "Do not use the TypeScript `any` type: `: any`, `as any`, `any[]`, `Array<any>`, `<any>`. Use a concrete type, a generic, or `unknown` instead.",
+      "notAViolation": "The word \"any\" inside a string or a comment, or as part of a name such as `anyValue` or `company`.",
+      "anchor": "\\bany\\b"
+    },
+    {
+      "id": "R2",
+      "title": "No `console.log`",
+      "description": "Do not leave `console.log(...)` calls in committed code.",
+      "notAViolation": "`console.error` or `console.warn`.",
+      "anchor": "console\\.log"
+    },
+    {
+      "id": "R3",
+      "title": "Use `===` and `!==`",
+      "description": "Compare values with strict equality `===` and `!==`. Every loose comparison `==` or `!=` is a violation.",
+      "notAViolation": "`===`, `!==`, or assignments such as `=`, `+=`, `=>`.",
+      "anchor": "[^=!<>]==[^=]|!=[^=]"
+    },
+    {
+      "id": "R4",
+      "title": "No empty `catch`",
+      "description": "A `catch` block must handle the error: log it, show it to the user, or rethrow it. A violation is a `catch` block that is empty or contains only comments, e.g. `catch {}` or `catch (e) { }`.",
+      "notAViolation": "A `catch` block with any statement inside.",
+      "anchor": "catch"
+    }
+  ]
+}
