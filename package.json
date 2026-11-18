@@ -1,0 +1,13 @@
+{
+  "name": "review-bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Demo bench for automated code review: team rules checked by a local LLM (Ollama), later SonarQube.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "review": "node tools/llm-review/review.mjs"
+  }
+}
