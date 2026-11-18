@@ -46,6 +46,7 @@ function printFileReview(review: FileReview): void {
   }
   for (const { issue, reason } of review.rejected) {
     console.log(`  ✗ rejected L${issue.line} [${issue.rule}] ${issue.message} — ${reason}`);
+    console.log(`        code: ${issue.evidence.trim() || '(none)'}`);
   }
   console.log();
 }

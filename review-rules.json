@@ -3,8 +3,8 @@
     {
       "id": "R1",
       "title": "Do not use `any`",
-      "description": "Do not use the TypeScript `any` type: `: any`, `as any`, `any[]`, `Array<any>`, `<any>`. Use a concrete type, a generic, or `unknown` instead.",
-      "notAViolation": "The word \"any\" inside a string or a comment, or as part of a name such as `anyValue` or `company`.",
+      "description": "Do not write the TypeScript `any` type in the code: `: any`, `as any`, `any[]`, `Array<any>`, `<any>`. Only report places where the keyword `any` is written, and quote that code including the word `any`. Use a concrete type, a generic, or `unknown` instead.",
+      "notAViolation": "Code that only returns or passes along an implicit `any`, e.g. `JSON.parse(raw)` or `as User[]`. The word \"any\" inside a string or a comment, or as part of a name such as `anyValue` or `company`.",
       "anchor": "\\bany\\b"
     },
     {
