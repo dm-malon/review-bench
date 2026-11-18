@@ -12,3 +12,7 @@ coverage/
 .claude/settings.local.json
 review.md
 .DS_Store
+
+# IDE
+.idea/
+.vscode/
