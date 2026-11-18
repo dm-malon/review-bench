@@ -1,0 +1,29 @@
+<form class="feedback-form" (submit)="$event.preventDefault(); submit()">
+  <app-input label="Name" [(value)]="name" />
+
+  <label class="field">
+    <span>Email</span>
+    <input
+      type="email"
+      placeholder="name@example.com"
+      [value]="email()"
+      (input)="onEmailInput($event)"
+    />
+  </label>
+
+  <label class="field">
+    <span>Message</span>
+    <textarea rows="4" [value]="message()" (input)="onMessageInput($event)"></textarea>
+  </label>
+
+  <label class="field">
+    <input type="checkbox" [checked]="subscribe()" (change)="onSubscribeChange($event)" />
+    Keep me updated
+  </label>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  <button type="submit">Send feedback</button>
+</form>
